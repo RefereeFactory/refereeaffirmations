@@ -1,0 +1,14 @@
+{
+  "name": "Referee Affirmations",
+  "short_name": "Affirmations",
+  "description": "Daily healing affirmations, spoken in a gentle voice. Your path to peace, confidence, and joy.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a163a",
+  "theme_color": "#1a163a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
