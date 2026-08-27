@@ -1,7 +1,7 @@
 // Referee Affirmations — offline shell.
 // Cache-first for the app shell and the affirmation audio, so the voice
 // keeps working on a weak connection. Chat and live voice need the network.
-const CACHE = "referee-affirmations-v1";
+const CACHE = "referee-affirmations-v2";
 const SHELL = [
   "./",
   "index.html",

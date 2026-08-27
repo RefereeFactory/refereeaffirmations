@@ -86,7 +86,8 @@
   .ctl:hover{color:var(--ink)} .ctl:active{transform:scale(.92)}
   .ctl svg{width:26px;height:26px;fill:currentColor}
   .playwrap{position:relative; width:92px; height:92px; display:flex; align-items:center; justify-content:center}
-  .ring{position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(244,196,172,.35)}
+  /* pointer-events:none — the rings sit above the button and must never swallow taps */
+  .ring{position:absolute; inset:0; border-radius:50%; border:1.5px solid rgba(244,196,172,.35); pointer-events:none}
   .playing .ring{animation:breathe 5.6s ease-in-out infinite}
   @keyframes breathe{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.22);opacity:.12}}
   #playBtn{
@@ -107,6 +108,32 @@
   .toggle input:checked + .track::after{transform:translateX(18px)}
   .toggle input:checked ~ .lbl{color:var(--glow)}
   .hint{text-align:center;color:var(--faint);font-size:12.5px;margin-top:12px;line-height:1.55}
+
+  /* library */
+  .lib h2{font-family:Fraunces,serif;font-weight:400;font-size:21px;text-align:center;margin-bottom:2px}
+  .lib .sub{text-align:center;color:var(--dim);font-size:13px;margin-bottom:14px}
+  .libhead{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  #libTitle{font-family:Fraunces,serif;font-size:19px;color:var(--glow)}
+  .libcount{color:var(--faint);font-size:12px;letter-spacing:.08em}
+  #libText{font-family:Fraunces,serif;font-weight:340;font-size:17.5px;line-height:1.7;text-align:center;
+    color:var(--ink);padding:4px 6px 14px;min-height:5em;transition:opacity .4s ease}
+  #libText.fading{opacity:0}
+  .libctl{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:2px}
+  #libPlay{width:56px;height:56px;border-radius:50%;border:1.5px solid rgba(244,196,172,.55);cursor:pointer;
+    background:rgba(244,196,172,.12);color:var(--glow);display:flex;align-items:center;justify-content:center;transition:all .25s}
+  #libPlay:hover{background:rgba(244,196,172,.22)} #libPlay:active{transform:scale(.94)}
+  #libPlay svg{width:22px;height:22px;fill:currentColor}
+  .librow{display:flex;justify-content:center;gap:16px;margin-top:14px;flex-wrap:wrap;align-items:center}
+  .linkbtn{background:none;border:1px solid var(--line);border-radius:999px;color:var(--dim);cursor:pointer;
+    padding:8px 18px;font:inherit;font-size:13px;letter-spacing:.06em;transition:all .25s;text-decoration:none;display:inline-block}
+  .linkbtn:hover{color:var(--glow);border-color:rgba(244,196,172,.45)}
+  #libGrid{display:none;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-height:300px;
+    overflow-y:auto;margin-top:14px;padding:4px 2px;scrollbar-width:thin}
+  #libGrid.open{display:grid}
+  .topic{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;color:var(--dim);
+    cursor:pointer;padding:9px 10px;font:inherit;font-size:12.5px;text-align:center;transition:all .2s}
+  .topic:hover{color:var(--ink)}
+  .topic.on{color:var(--glow);border-color:rgba(244,196,172,.55);background:rgba(244,196,172,.10)}
 
   /* chat */
   .chat h2{font-family:Fraunces,serif;font-weight:400;font-size:21px;text-align:center;margin-bottom:2px}
@@ -177,6 +204,38 @@
         </label>
       </div>
       <p class="hint">Continuous keeps the affirmations flowing gently, one after another —<br>they carry on even when your screen is off or your phone is locked.</p>
+    </section>
+
+    <section class="card lib" aria-label="The Library">
+      <h2>The Library</h2>
+      <p class="sub">All 65 teachings from MindTaxis — spoken in the same gentle voice.</p>
+      <div class="libhead">
+        <span id="libTitle"></span>
+        <span class="libcount" id="libCount"></span>
+      </div>
+      <p id="libText" aria-live="polite"></p>
+      <div class="libctl">
+        <button class="ctl" id="libPrev" aria-label="Back">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button id="libPlay" aria-label="Play">
+          <svg id="libIconPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="libIconPause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+        </button>
+        <button class="ctl" id="libNext" aria-label="Next">
+          <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>
+        </button>
+      </div>
+      <div class="librow">
+        <label class="toggle">
+          <input type="checkbox" id="libLoop">
+          <span class="track"></span>
+          <span class="lbl">Continuous</span>
+        </label>
+        <button class="linkbtn" id="libBrowse">Browse</button>
+        <a class="linkbtn" id="libWatch" href="#" target="_blank" rel="noopener">Watch</a>
+      </div>
+      <div id="libGrid" role="listbox" aria-label="All teachings"></div>
     </section>
 
     <section class="card chat" aria-label="Talk with Hope">
@@ -428,6 +487,106 @@
     chatIn.style.height = "";
     chatIn.style.height = Math.min(chatIn.scrollHeight, 120) + "px";
   });
+
+  /* ---------------- The Library: all 65 MindTaxis teachings ---------------- */
+  const LIB = [{"n": 1, "title": "Don't Work Too Hard", "text": "relax, walk in nature and meditate, dont work too hard learn to enjoy life more, just be present, don't try to be anything special, just love yourself exactely how you are right now", "video": "https://www.youtube.com/watch?v=gFdUS0Cm1Fs"}, {"n": 2, "title": "Sadness", "text": "sadness manifests itself as tension in the upper scalp, massage it vigorously for relief there are two ways to deal with sadness, one physical and one mental: the physical is to locate the area in the upper scalp that is perpetrating the sensations of sadness and massage it, the second is to fully accept it so as not to offer any resistance to it so as relax the body, watch the video it explains how to deal with it", "video": "https://www.youtube.com/watch?v=iVDnRV2YgZs"}, {"n": 3, "title": "Love", "text": "love is the sublime emotion and is the root of all positive emotions, cultivate it for dramatic enhancement of quality of life, watch the video that explains how.There is nothing more beautiful nor more pleasurable for the human psyche than being immersed in pure love, I will explain what I mean by being immersed in love, If you repeat to yourself the words, I love you, I love you repeatedly you train your mind to imprint this pattern in your mind and the words and the feeling of comfort and security that comes with it will create a pattern of associations between the events occurring. The more this pattern starts to dominate your life the more content, happy and joyous you will become. Be well my friends you can become happier by harnessing the power of love", "video": "https://www.youtube.com/watch?v=QXOJFy28Yck"}, {"n": 4, "title": "Wanting", "text": "wanting or craving is at the source of all suffering, practice gratitude to reduce wanting", "video": "https://www.youtube.com/watch?v=g00aBQ3ei08"}, {"n": 5, "title": "Happiness", "text": "happiness is an internal state of being, external situations have no bearing on the internal state, one sure way to increase happiness and satisfaction in life is to invoke love into your life, watch the video to get an idea on how to do that", "video": "https://www.youtube.com/watch?v=QXOJFy28Yck"}, {"n": 6, "title": "Fear", "text": "fear is at the root of all negative emotions, you can easily get rid of it by a self love meditation, watch the video to learn more about what fear really is", "video": "https://www.youtube.com/watch?v=jnNPiDr15dw"}, {"n": 7, "title": "Panic", "text": "panic attacks are when you start to fear fear itself, cure by full acceptance of fear as an emotion, total surrender to present moment cures panic attacks watch the video, it explains how to rid yourself of fear", "video": "https://www.youtube.com/watch?v=dL86rl8fVTA"}, {"n": 8, "title": "When You Can't Sleep", "text": "if you can't sleep, just be there don't resist, just shift your attention from your mind to your body, feel the aliveness of your body keep noticing your body, shift your attention to your breath and just be there once your attention is no longer in your thoughts, sleep comes easily, the video explains more", "video": "https://www.youtube.com/watch?v=1oQ0-frVYyM"}, {"n": 9, "title": "Guilt", "text": "The emotion of guilt is fear in disguise, it is fear of what others might say or do so we direct this fear towards ourselves to alter behavior and it displays itself as self hatred and guilt to rid yourself of this terrible emotion just do a meditation of self love as explained in the video", "video": "https://www.youtube.com/watch?v=oQg63Qyb73Y"}, {"n": 10, "title": "Boredom", "text": "Boredom is a really misunderstood emotion, most people attribute boredom to lack of money or lack of available activities, in fact boredom is a type of self hatred and is the result of the feeling of not wanting to be with oneself, it is a fear and we know that love reduces fear and that acceptance is a variant of love, so we accept ourselves fully to reduce boredom as explained in the video", "video": "https://www.youtube.com/watch?v=Tkrh9PH3zuM"}, {"n": 11, "title": "When Pain Feels Too Heavy", "text": "Thought of self harm or thoughts of suicide can occur in the mind as an attempt to escape from pain and fear, there are many ways to deal with pain and fear and here is one : just love yourself unconditionally, the video explains more", "video": "https://www.youtube.com/watch?v=h97-kde9THw"}, {"n": 12, "title": "Meditation", "text": "Meditation is an ancient practice that has been used to enhance quality of life and to deal with emotional difficulties for thousands of years, please watch the video where I explain its benefits and features", "video": "https://www.youtube.com/watch?v=kuyMUGLAixc"}, {"n": 13, "title": "Hatred", "text": "Hatred is an emotion that is derived from fear and it makes a lot of people suffer uncessarily in short it is cured with love meditation, watch the video for more indepth explanation", "video": "https://www.youtube.com/watch?v=HXFzWCXjvjA"}, {"n": 14, "title": "Who Are You?", "text": "My name is isam elbousserghini, I used to be an engineer and went through a very difficult period of my life where I experienced tremendous mental and emotional pain, I used my engineering skills to develop a way to come out of pain using cognitive methods which I am sharing in this interactive website", "video": "https://www.youtube.com/watch?v=q62wiJTqGK4"}, {"n": 15, "title": "Releasing Tension", "text": "when we are anxious we instinctively tense up our muscles, for most people it is the muscles of the neck and scalp for others it could be in the back or stomach area watch this video that explains how to deal with tension in the body", "video": "https://www.youtube.com/watch?v=IRw9twGjKio"}, {"n": 16, "title": "Gratitude", "text": "Gratitude is an emotion that is responsible for a lot of happiness in order for a person to become happy and enhance quality of life, gratitude should be cultivated and praticed daily, the video shows how", "video": "https://www.youtube.com/watch?v=j833XLFViCc"}, {"n": 17, "title": "How the Mind Works", "text": "When a person trains herself in meditation a process of re-patterning of the brain happens, that is why meditation works, watch the video to learn more", "video": "https://www.youtube.com/watch?v=JTeDG0ik0-4"}, {"n": 18, "title": "Anxiety", "text": "Anxiety is simply a form of fear that has a lingering characteristic, it is a background feeling of unease and suffering, if it lasts for a long time, it can trigger clinical depression, as anxiety is a variant of fear it can be cured with a self love meditation and/or by directing love to the source of anxiety watch the video for more explanation", "video": "https://www.youtube.com/watch?v=vUE10reWX_g"}, {"n": 19, "title": "Thought", "text": "Do not beleive every thought that comes to you, this simple action will liberate you from the grip of conditioning, watch the video for more explanation", "video": "https://www.youtube.com/watch?v=pEGvB9DAMjU"}, {"n": 20, "title": "The Free Mind", "text": "the conditioned mind is by definition a slave mind.Society, our parents, our environmet, all have conditioned us to be what we are, for the mind that is not free, this is where action and thoughts are initiated, watch the video for more insight", "video": "https://www.youtube.com/watch?v=Jpe_wcJPD00"}, {"n": 21, "title": "Morality", "text": "Morality or good morality is the conduct that does not lead to the harm of oneself or others, when we have good morality in our lives, we gain peace of mind which lead us to have good ability to concentrate which lead us to have good mental and intellectual abilities which lead us to make good descision leading to the happiness of all including ourselves, watch the video, it explains this point in more depth", "video": "https://www.youtube.com/watch?v=dgIhpNDRmsY"}, {"n": 22, "title": "Pain", "text": "Physical and emotional pains can be dealt with with a full acceptance meditation watch the video that explains how", "video": "https://www.youtube.com/watch?v=N5IlJs-Ed-M"}, {"n": 23, "title": "States of Mind", "text": "Higher states of being are just extremely enjoyable states that the human mind is capable of generating, watch the video where I explain how to reach them", "video": "https://www.youtube.com/watch?v=cB7wHFOgFSk"}, {"n": 24, "title": "Surrender", "text": "Surrender to what has already happened, we need to understand that resisting what has already happened is futile, watch the video it explains it more", "video": "https://www.youtube.com/watch?v=8x9xmFlin14"}, {"n": 25, "title": "Reality", "text": "It is very enjoyable to live in reality and not in ones thoughts,watch the video below that describes this idea", "video": "https://www.youtube.com/watch?v=ph7IvA_QIYk"}, {"n": 26, "title": "Awareness", "text": "awarness is who you are, you are not your body, you are not your thoughts, you are not your feelings, you are the observer observing all this, watch the video where I talk about awarness", "video": "https://www.youtube.com/watch?v=dEYNcuwgMk4"}, {"n": 27, "title": "Resistance", "text": "Resistance of the mind is responsible for the larger proportion of human mental suffering. watch the video to understand the mechanism by which it operates so that you can reduce it and thus reduce suffering", "video": "https://www.youtube.com/watch?v=JK4gU7euTTs"}, {"n": 28, "title": "Emotion & Contraction", "text": "The thought, emotion, contraction cycle is what causes moods to arise, learn to break it and come out of the cycle and thus improve mood, watch the video to get a explanation", "video": "https://www.youtube.com/watch?v=pm8W2Czvvy4"}, {"n": 29, "title": "The Mind as an App", "text": "Mind apps is simply an analogy of how a person can change how he or she thinks simply by installing an idea in the mind, watch the video for an explanation", "video": "https://www.youtube.com/watch?v=un65OzV5OsU"}, {"n": 30, "title": "Creating Your Reality", "text": "Your thoughts create your subjective reality which in turn creates your objective reality, watch the video that explains the topic", "video": "https://www.youtube.com/watch?v=IU8J_bFfQMY"}, {"n": 31, "title": "Envy", "text": "Envy or jealousy is a negative emotion that can make the person suffer tremendously watch the video to learn a technique to deal with it", "video": "https://www.youtube.com/watch?v=gjeRq-ZqQek"}, {"n": 32, "title": "Friendliness", "text": "Universal friendliness is the universal wish that you have for all beings to be well, happy, joyfull and serene, watch the video where I describe the process of doing it", "video": "https://www.youtube.com/watch?v=PDSjuGUGdrk"}, {"n": 33, "title": "What an Emotion Is", "text": "The emotion is an entity that rises in the mind as a result of a thought which calls an emotion which makes the body contract which brings more thoughts of the same nature and the cycle continues watch the video for more explanation", "video": "https://www.youtube.com/watch?v=QlSPgtoXIOQ"}, {"n": 34, "title": "Shame", "text": "Shame is an emotion from the family of fear emotions and is dealt with swiftly by applying self love to it, watch the video that explains how to deal with it", "video": "https://www.youtube.com/watch?v=E7mkpcqtl-w"}, {"n": 35, "title": "Introduction", "text": "Here I introduce the app and describe briefly how to use it watch the video for more info", "video": "https://www.youtube.com/watch?v=54-B0ByCsG4"}, {"n": 36, "title": "The Modular Mind", "text": "The theory of the modular mind describes pretty accurately how thoughts and emotions interact to compete for your attention, watch the video that descibes this in more detail", "video": "https://www.youtube.com/watch?v=0N6yZgLbnY8"}, {"n": 37, "title": "Anger", "text": "Anger is an explosive emotion, it rises suddenly in the mind in a fraction of a second watch the video that explains how to deal with it", "video": "https://www.youtube.com/watch?v=Y1z8rNY8jM8"}, {"n": 38, "title": "Addiction", "text": "Being addicted to psychoactive drugs is a terrible curse let me show you how to free yourself from this slavery", "video": "https://www.youtube.com/watch?v=dzsh29EZ1vU"}, {"n": 39, "title": "Suffering Is Optional", "text": "Pain is inevitable but suffering is optional watch the video that expands on this idea", "video": "https://www.youtube.com/watch?v=BHoZGaDrreo"}, {"n": 40, "title": "The Senses", "text": "Try to be mindfull of the information coming from the senses rather than being absorbed in your thoughts, watch the video where I discuss the idea", "video": "https://www.youtube.com/watch?v=4NS14kjswGI"}, {"n": 41, "title": "Motivation", "text": "Did you know that self approval and self love is necessary to keep your motivation to acheive any goal in life watch the video that describes this point in more detail", "video": "https://www.youtube.com/watch?v=wxHtXETD09s"}, {"n": 42, "title": "Creativity", "text": "Creativity is essential to human progress, it is the tool that makes life more interesting in the video i describe two cognitive tools to encourage it", "video": "https://www.youtube.com/watch?v=PtbnerblMno"}, {"n": 43, "title": "The Radio Mind", "text": "Your mind is like a radio reciever, whatever you tune into you will hear, so tune your mind to the right stations, watch the vide above for more explanation", "video": "https://www.youtube.com/watch?v=FbSXanXRTXw"}, {"n": 44, "title": "The Laws of Emotion", "text": "The laws of emotion is a theory that I developed that descibes the human emotional system and how to deal with emotions, watch the video for more info", "video": "https://www.youtube.com/watch?v=8qQ45dH1vRg"}, {"n": 45, "title": "The Third State", "text": "The third state of being possible for a human being is not sleep nor being awake watch the video for more", "video": "https://www.youtube.com/watch?v=SoNRe-jLrzM"}, {"n": 46, "title": "Mind Over Matter", "text": "The mind is what matters when it comes to how we feel watch the video for a summary of this idea", "video": "https://www.youtube.com/watch?v=PpHb1o1zcYs"}, {"n": 47, "title": "All Strength Is Love", "text": "All power and strength comes from love and not fear watch this video to harness this law to become strong", "video": "https://www.youtube.com/watch?v=lqxYk4WS_ao"}, {"n": 48, "title": "The Three Brains", "text": "We all have three brains within us guiding our behaviour, watch the video for an explanation", "video": "https://www.youtube.com/watch?v=kF7BE9vPYts"}, {"n": 49, "title": "Addiction", "text": "Being addicted to psychoactive drugs is a terrible curse let me show you how to free yourself from this slavery", "video": "https://www.youtube.com/watch?v=kXykQx7R5eg"}, {"n": 50, "title": "Injustice", "text": "Sometimes in life we encounter injustice towards ourselves or our loved ones watch the video where I show how to deal with injustice without loosing your peace of mind", "video": "https://www.youtube.com/watch?v=ChW3rvRgLfA"}, {"n": 51, "title": "Immunity", "text": "The immune and regenerative systems keep us healthy, free from disease and repair our bodies, learn to kickstart them with the methods described in the video", "video": "https://www.youtube.com/watch?v=4rukg_Akccc"}, {"n": 52, "title": "Work", "text": "relax, walk in nature and meditate, dont work too hard learn to enjoy life more, just be present, don't try to be anything special, just love yourself exactely how you are right now", "video": "https://www.youtube.com/watch?v=VlHFvafjHmY"}, {"n": 53, "title": "The Limbic System", "text": "Meditation can be viewed as a way to control the limbic system by the use of the neocortex, watch the video for more information", "video": "https://www.youtube.com/watch?v=d5ks53uKi0U"}, {"n": 54, "title": "Learning", "text": "In the video I talk about the link between love and learning and reveal thre meditations that can help you get more concentration to enable focus and facilitate learning", "video": "https://www.youtube.com/watch?v=aheVpYIXb2c"}, {"n": 55, "title": "Rejection", "text": "In the video I illustrate 4 mini meditations for delaing with rejection and regaining peace of mind", "video": "https://www.youtube.com/watch?v=Y5oppuD2Ae0"}, {"n": 56, "title": "The Inner Pharmacy", "text": "In this video I revael the chemicals that get released in our bodies as a result of the mini meditations I bring in other videos", "video": "https://www.youtube.com/watch?v=Ivo0sNLaHzs"}, {"n": 57, "title": "Depression", "text": "In this video I reveal 4 mini meditations to deal with depression", "video": "https://www.youtube.com/watch?v=k0cpQD9HAc4"}, {"n": 58, "title": "Science", "text": "You certainly do not need to belong to the church of science to do science. Science can be practiced by anyone regardless, watch the video for more", "video": "https://www.youtube.com/watch?v=3ML8wAMwYwg"}, {"n": 59, "title": "Patience", "text": "In the video I show a simple method to develop the muscle of patience", "video": "https://www.youtube.com/watch?v=s_MxeS5YrX8"}, {"n": 60, "title": "Nature", "text": "In the video I explain why nature heals us", "video": "https://www.youtube.com/watch?v=zjoVbGSJBlo"}, {"n": 61, "title": "Recognising Emotion", "text": "In the video I explain why recognition of emotion present is very important", "video": "https://www.youtube.com/watch?v=i8b9GTRcOyk"}, {"n": 62, "title": "Appreciation", "text": "In the video I hghlight the link between value, appreciation and gratitude", "video": "https://www.youtube.com/watch?v=McMae28KTIg"}, {"n": 63, "title": "The Placebo Effect", "text": "In the video I explain the placebo, nocebo effects and their link to black magic", "video": "https://www.youtube.com/watch?v=n5TNUUDOUHM"}, {"n": 64, "title": "Reasons", "text": "In the video I explain the reasons why I made this web app available publicly", "video": "https://www.youtube.com/watch?v=m0XbuVZRc3M"}, {"n": 65, "title": "Scalp Massage", "text": "In the video I explain how important is full body awarness and I show techniques to massage your scalp", "video": "https://www.youtube.com/watch?v=RnzUuOjJeww"}];
+  let libIdx = 0;
+  let libPlaying = false;
+  const libAudio = new Audio();
+  libAudio.preload = "none";
+  libAudio.setAttribute("playsinline", "");
+
+  const libTitle = $("libTitle"), libCount = $("libCount"), libText = $("libText"),
+        libGrid = $("libGrid"), libWatch = $("libWatch"),
+        libPlayBtn = $("libPlay"), libIconPlay = $("libIconPlay"), libIconPause = $("libIconPause");
+
+  // one voice at a time: whichever deck starts, the other yields
+  libAudio.addEventListener("play", () => { player.pause(); chatAudio.pause(); });
+  player.addEventListener("play", () => libAudio.pause());
+
+  LIB.forEach((e, i) => {
+    const b = document.createElement("button");
+    b.className = "topic";
+    b.textContent = e.title;
+    b.setAttribute("role", "option");
+    b.addEventListener("click", () => { goToLib(i, true); });
+    libGrid.appendChild(b);
+  });
+
+  function renderLib(fade) {
+    const e = LIB[libIdx];
+    const swap = () => {
+      libTitle.textContent = e.title;
+      libCount.textContent = (libIdx + 1) + " of " + LIB.length;
+      libText.textContent = e.text;
+      libWatch.href = e.video;
+      [...libGrid.children].forEach((c, i) => c.classList.toggle("on", i === libIdx));
+      libText.classList.remove("fading");
+    };
+    if (fade) { libText.classList.add("fading"); setTimeout(swap, 280); } else swap();
+  }
+
+  function setLibUI(on) {
+    libPlaying = on;
+    libIconPlay.style.display = on ? "none" : "";
+    libIconPause.style.display = on ? "" : "none";
+    libPlayBtn.setAttribute("aria-label", on ? "Pause" : "Play");
+  }
+
+  function libSession() {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: LIB[libIdx].title,
+        artist: "Referee Affirmations — The Library",
+        album: "Teachings from MindTaxis",
+        artwork: [{ src: "icon-512.png", sizes: "512x512", type: "image/png" },
+                  { src: "icon-192.png", sizes: "192x192", type: "image/png" }]
+      });
+      navigator.mediaSession.setActionHandler("play", libPlayNow);
+      navigator.mediaSession.setActionHandler("pause", libPause);
+      navigator.mediaSession.setActionHandler("previoustrack", () => goToLib(libIdx - 1, true));
+      navigator.mediaSession.setActionHandler("nexttrack", () => goToLib(libIdx + 1, true));
+    } catch (_) {}
+  }
+
+  async function libPlayNow() {
+    const want = new URL("audio/lib-" + LIB[libIdx].n + ".mp3", location.href).href;
+    if (libAudio.src !== want) libAudio.src = want;
+    try { await libAudio.play(); setLibUI(true); libSession(); } catch (_) { setLibUI(false); }
+  }
+  function libPause() { libAudio.pause(); setLibUI(false); }
+
+  function goToLib(i, thenPlay) {
+    libIdx = ((i % LIB.length) + LIB.length) % LIB.length;
+    renderLib(true);
+    if (thenPlay) libPlayNow(); else { libAudio.removeAttribute("src"); setLibUI(false); }
+  }
+
+  libPlayBtn.addEventListener("click", () => { libPlaying ? libPause() : libPlayNow(); });
+  $("libPrev").addEventListener("click", () => goToLib(libIdx - 1, libPlaying));
+  $("libNext").addEventListener("click", () => goToLib(libIdx + 1, libPlaying));
+  $("libBrowse").addEventListener("click", () => libGrid.classList.toggle("open"));
+
+  // Continuous: when a teaching ends, the next begins — same audio element,
+  // so it keeps flowing with the screen off or the phone locked.
+  libAudio.addEventListener("ended", () => {
+    if ($("libLoop").checked) { goToLib(libIdx + 1, true); }
+    else setLibUI(false);
+  });
+  libAudio.addEventListener("pause", () => { if (!libAudio.ended) setLibUI(false); });
+  libAudio.addEventListener("play", () => setLibUI(true));
+
+  renderLib(false);
+
+  // extend the support handle with library state
+  window.__ra.lib = {
+    get t() { return libAudio.currentTime; },
+    get dur() { return libAudio.duration; },
+    get paused() { return libAudio.paused; },
+    get idx() { return libIdx; },
+    seek(t) { try { libAudio.currentTime = t; } catch (_) {} }
+  };
 
   // gentle floating specks
   const lights = document.querySelector(".lights");
